@@ -1,7 +1,5 @@
 package com.francoismoureau.moneytransfer;
 
-import com.francoismoureau.moneytransfer.model.Account;
-import com.francoismoureau.moneytransfer.model.Transfer;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Launcher;
@@ -11,6 +9,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -19,8 +18,8 @@ import java.util.Map;
 
 public class MoneyTransferVerticle extends AbstractVerticle {
 
-    private Map<Integer, Account> accounts = new LinkedHashMap<>();
-    private Map<Integer, Transfer> transfers = new LinkedHashMap<>();
+    private final Map<Integer, Account> accounts = new LinkedHashMap<>();
+    private final Map<Integer, Transfer> transfers = new LinkedHashMap<>();
 
     public static void main(final String[] args) {
         Launcher.executeCommand("run", MoneyTransferVerticle.class.getName());
@@ -40,7 +39,7 @@ public class MoneyTransferVerticle extends AbstractVerticle {
                     .end("<h1>MoneyTransfer</h1>");
         });
 
-        //router.route("/assets/*").handler(StaticHandler.create("assets"));
+        router.route("/assets/*").handler(StaticHandler.create("assets"));
 
         router.route().handler(BodyHandler.create());
 
@@ -54,7 +53,6 @@ public class MoneyTransferVerticle extends AbstractVerticle {
         router.get("/api/transfers/:id").handler(this::getTransfer);
         router.post("/api/transfers").handler(this::addTransfer);
         router.put("/api/transfers/:id").handler(this::updateTransfer);
-        //router.delete("/api/transfers/:id").handler(this::deleteTransfer);
 
         vertx
                 .createHttpServer()
@@ -173,8 +171,7 @@ public class MoneyTransferVerticle extends AbstractVerticle {
 
     private void updateTransfer(RoutingContext routingContext) {
         final String id = routingContext.request().getParam("id");
-        JsonObject json = routingContext.getBodyAsJson();
-        if (id == null || json == null) {
+        if (id == null) {
             routingContext.response().setStatusCode(400).end();
         } else {
             final Integer idAsInteger = Integer.valueOf(id);
@@ -182,7 +179,13 @@ public class MoneyTransferVerticle extends AbstractVerticle {
             if (transfer == null) {
                 routingContext.response().setStatusCode(404).end();
             } else {
-                transfer.execute();
+                if (transfer.getStatus() != Transfer.TransferStatus.EXECUTED && transfer.getAmount().compareTo(BigDecimal.ZERO) > 0 && accounts.get(transfer.getSourceAccountId()).getBalance().compareTo(transfer.getAmount()) > 0 && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(accounts.get(transfer.getDestinationAccountId()).getCurrency()) && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(transfer.getCurrency()) && accounts.get(transfer.getDestinationAccountId()).getCurrency().equals(transfer.getCurrency())) {
+                    accounts.get(transfer.getSourceAccountId()).withdraw(transfer.getAmount());
+                    accounts.get(transfer.getDestinationAccountId()).deposit(transfer.getAmount());
+                    transfer.setStatus(Transfer.TransferStatus.EXECUTED);
+                } else {
+                    transfer.setStatus(Transfer.TransferStatus.FAILED);
+                }
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end(Json.encodePrettily(transfer));
@@ -191,11 +194,11 @@ public class MoneyTransferVerticle extends AbstractVerticle {
     }
 
     private void createSomeData() {
-        Account acc1 = new Account("Account 1", new BigDecimal(2345), Currency.getInstance("EUR"));
+        Account acc1 = new Account("Account 1", new BigDecimal("2345"), Currency.getInstance("EUR"));
         accounts.put(acc1.getId(), acc1);
-        Account acc2 = new Account("Account 2", new BigDecimal(437), Currency.getInstance("EUR"));
+        Account acc2 = new Account("Account 2", new BigDecimal("437"), Currency.getInstance("EUR"));
         accounts.put(acc2.getId(), acc2);
-        Account acc3 = new Account("Account 3", new BigDecimal(10000), Currency.getInstance("GBP"));
+        Account acc3 = new Account("Account 3", new BigDecimal("10000"), Currency.getInstance("GBP"));
         accounts.put(acc3.getId(), acc3);
     }
 

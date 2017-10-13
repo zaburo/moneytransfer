@@ -1,4 +1,4 @@
-package com.francoismoureau.moneytransfer.model;
+package com.francoismoureau.moneytransfer;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -11,9 +11,9 @@ public class Transfer {
 
     private final int id;
 
-    private Account source;
+    private int sourceAccountId;
 
-    private Account destination;
+    private int destinationAccountId;
 
     private BigDecimal amount;
 
@@ -25,44 +25,41 @@ public class Transfer {
 
     private TransferStatus status;
 
-    public Transfer(Account source, Account destination, BigDecimal amount, Currency currency, Date date, String comment) {
+    public Transfer(int sourceAccountId, int destinationAccountId, BigDecimal amount, Currency currency, String comment) {
         this.id = COUNTER.getAndIncrement();
-        this.source = source;
-        this.destination = destination;
+        this.sourceAccountId = sourceAccountId;
+        this.destinationAccountId = destinationAccountId;
         this.amount = amount;
         this.currency = currency;
-        this.date = date;
+        this.date = new Date();
         this.comment = comment;
         this.status = TransferStatus.CREATED;
     }
 
     public Transfer() {
         this.id = COUNTER.getAndIncrement();
+        this.date = new Date();
         this.status = TransferStatus.CREATED;
-    }
-
-    public static AtomicInteger getCOUNTER() {
-        return COUNTER;
     }
 
     public int getId() {
         return id;
     }
 
-    public Account getSource() {
-        return source;
+    public int getSourceAccountId() {
+        return sourceAccountId;
     }
 
-    public void setSource(Account source) {
-        this.source = source;
+    public void setSourceAccountId(int sourceAccountId) {
+        this.sourceAccountId = sourceAccountId;
     }
 
-    public Account getDestination() {
-        return destination;
+    public int getDestinationAccountId() {
+        return destinationAccountId;
     }
 
-    public void setDestination(Account destination) {
-        this.destination = destination;
+    public void setDestinationAccountId(int destinationAccountId) {
+        this.destinationAccountId = destinationAccountId;
     }
 
     public BigDecimal getAmount() {
@@ -124,26 +121,14 @@ public class Transfer {
     public String toString() {
         return "Transfer{" +
                 "id=" + id +
-                ", source=" + source +
-                ", destination=" + destination +
+                ", sourceAccountId=" + sourceAccountId +
+                ", destinationAccountId=" + destinationAccountId +
                 ", amount=" + amount +
                 ", currency=" + currency +
                 ", date=" + date +
                 ", comment='" + comment + '\'' +
                 ", status=" + status +
                 '}';
-    }
-
-    public boolean execute() {
-        if (status != TransferStatus.EXECUTED && amount.compareTo(BigDecimal.ZERO) > 0 && source.getBalance().compareTo(amount) > 0 && source.getCurrency().equals(destination.getCurrency()) && source.getCurrency().equals(currency) && destination.getCurrency().equals(currency)) {
-            source.withdraw(amount);
-            destination.deposit(amount);
-            status = TransferStatus.EXECUTED;
-            return true;
-        } else {
-            status = TransferStatus.FAILED;
-            return false;
-        }
     }
 
     public enum TransferStatus {

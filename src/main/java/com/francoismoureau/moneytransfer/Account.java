@@ -1,4 +1,4 @@
-package com.francoismoureau.moneytransfer.model;
+package com.francoismoureau.moneytransfer;
 
 import java.math.BigDecimal;
 import java.util.Currency;
