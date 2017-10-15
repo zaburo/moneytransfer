@@ -27,7 +27,7 @@ Checkout the project from this repository, then run
     mvn clean verify
 ```
 ## How to run the application
-Build the application or use the fat jar, then run
+Build the application or use the [fat jar](https://github.com/moureauf/moneytransfer/blob/master/moneytransfer-1.0-SNAPSHOT-fat.jar), then run
 ```
     java -jar moneytransfer-1.0-SNAPSHOT-fat.jar
 ```
