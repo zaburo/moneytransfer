@@ -23,6 +23,7 @@ public class MoneyTransferVerticle extends AbstractVerticle {
     private final Map<Integer, Account> accounts = new LinkedHashMap<>();
     private final Map<Integer, Transfer> transfers = new LinkedHashMap<>();
 
+
     public static void main(final String[] args) {
         Launcher.executeCommand("run", MoneyTransferVerticle.class.getName());
     }
@@ -138,10 +139,11 @@ public class MoneyTransferVerticle extends AbstractVerticle {
                 }
                 if (!updated) {
                     routingContext.response().setStatusCode(400).end();
+                } else {
+                    routingContext.response()
+                            .putHeader("content-type", "application/json; charset=utf-8")
+                            .end(Json.encodePrettily(account));
                 }
-                routingContext.response()
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(account));
             }
         }
     }
@@ -150,11 +152,13 @@ public class MoneyTransferVerticle extends AbstractVerticle {
         String id = routingContext.request().getParam("id");
         if (id == null) {
             routingContext.response().setStatusCode(400).end();
+        } else if (accounts.get(Integer.valueOf(id)) == null) {
+            routingContext.response().setStatusCode(404).end();
         } else {
             Integer idAsInteger = Integer.valueOf(id);
             accounts.remove(idAsInteger);
+            routingContext.response().setStatusCode(204).end();
         }
-        routingContext.response().setStatusCode(204).end();
     }
 
     private void getAllTransfers(RoutingContext routingContext) {
@@ -204,7 +208,7 @@ public class MoneyTransferVerticle extends AbstractVerticle {
             if (transfer == null) {
                 routingContext.response().setStatusCode(404).end();
             } else {
-                if (transfer.getStatus() != Transfer.TransferStatus.EXECUTED && transfer.getStatus() != Transfer.TransferStatus.FAILED && transfer.getAmount().compareTo(BigDecimal.ZERO) > 0 && accounts.get(transfer.getSourceAccountId()).getBalance().compareTo(transfer.getAmount()) > 0 && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(accounts.get(transfer.getDestinationAccountId()).getCurrency()) && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(transfer.getCurrency()) && accounts.get(transfer.getDestinationAccountId()).getCurrency().equals(transfer.getCurrency())) {
+                if (transfer.getStatus() != Transfer.TransferStatus.EXECUTED && transfer.getStatus() != Transfer.TransferStatus.FAILED && transfer.getAmount().compareTo(BigDecimal.ZERO) > 0 && accounts.get(transfer.getSourceAccountId()) != null && accounts.get(transfer.getDestinationAccountId()) != null && accounts.get(transfer.getSourceAccountId()).getBalance().compareTo(transfer.getAmount()) >= 0 && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(accounts.get(transfer.getDestinationAccountId()).getCurrency()) && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(transfer.getCurrency()) && accounts.get(transfer.getDestinationAccountId()).getCurrency().equals(transfer.getCurrency())) {
                     accounts.get(transfer.getSourceAccountId()).withdraw(transfer.getAmount());
                     accounts.get(transfer.getDestinationAccountId()).deposit(transfer.getAmount());
                     transfer.setStatus(Transfer.TransferStatus.EXECUTED);
@@ -219,12 +223,18 @@ public class MoneyTransferVerticle extends AbstractVerticle {
     }
 
     private void createSomeData() {
-        Account acc1 = new Account("Account 1", new BigDecimal("2345"), Currency.getInstance("EUR"));
+        Account acc1 = new Account("John Doe", new BigDecimal("2345"), Currency.getInstance("EUR"));
         accounts.put(acc1.getId(), acc1);
-        Account acc2 = new Account("Account 2", new BigDecimal("437"), Currency.getInstance("EUR"));
+        Account acc2 = new Account("Bill Doe", new BigDecimal("437"), Currency.getInstance("EUR"));
         accounts.put(acc2.getId(), acc2);
-        Account acc3 = new Account("Account 3", new BigDecimal("10000"), Currency.getInstance("GBP"));
+        Account acc3 = new Account("John Smith", new BigDecimal("10000"), Currency.getInstance("GBP"));
         accounts.put(acc3.getId(), acc3);
+        Transfer tr1 = new Transfer(0, 1, new BigDecimal("650"), Currency.getInstance("EUR"), "Rent");
+        transfers.put(tr1.getId(), tr1);
+        Transfer tr2 = new Transfer(1, 2, new BigDecimal("200"), Currency.getInstance("USD"), "Happy birthday");
+        transfers.put(tr2.getId(), tr2);
+        Transfer tr3 = new Transfer(1, 0, new BigDecimal("100"), Currency.getInstance("EUR"), "Groceries");
+        transfers.put(tr2.getId(), tr2);
     }
 
 }

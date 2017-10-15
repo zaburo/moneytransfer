@@ -34,7 +34,7 @@
         <dependency>
             <groupId>com.jayway.restassured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>2.4.0</version>
+            <version>2.9.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -78,8 +78,6 @@
                                       spawn="true">
                                     <arg value="-jar"/>
                                     <arg value="${project.artifactId}-${project.version}-fat.jar"/>
-                                    <arg value="-conf"/>
-                                    <arg value="${project.build.directory}/test-classes/config.json"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -96,7 +94,7 @@
                                       dir="${project.build.directory}"
                                       spawn="false">
                                     <arg value="-c"/>
-                                    <arg value="ps ax | grep -i '${project.artifactId}' | awk 'NR==1{print $1}' | xargs kill -SIGTERM"/>
+                                    <arg value="ps ax | grep -i 'moneytransfer' | awk 'NR==1{print $1}' | xargs kill -SIGTERM"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -174,7 +172,7 @@
                                               spawn="false">
                                             <arg value="process"/>
                                             <arg value="where"/>
-                                            <arg value="CommandLine like '%${project.artifactId}%' and not name='wmic.exe'"/>
+                                            <arg value="CommandLine like '%moneytransfer%' and not name='wmic.exe'"/>
                                             <arg value="delete"/>
                                         </exec>
                                     </target>
