@@ -8,11 +8,11 @@ import org.junit.Test;
 import static com.jayway.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.equalTo;
 
-public class MoneyTransferRestTest {
+public class MoneyTransferIT {
     @BeforeClass
     public static void configureRestAssured() {
         RestAssured.baseURI = "http://localhost";
-        RestAssured.port = Integer.getInteger("http.port", 8080);
+        RestAssured.port = 8080;
     }
 
     @AfterClass
@@ -21,7 +21,7 @@ public class MoneyTransferRestTest {
     }
 
     @Test
-    public void testRetrieveAccount() {
+    public void testRetrieveAllAccounts() {
         final int id = get("/api/accounts").then()
                 .assertThat()
                 .statusCode(200)
@@ -35,6 +35,25 @@ public class MoneyTransferRestTest {
                 .body("balance", equalTo(2345))
                 .body("currency", equalTo("EUR"));
     }
+
+//    @Test
+//    public void testRetrieveOneAccount() {
+//        final int id = get("/api/accounts/1").then()
+//                .assertThat()
+//                .statusCode(200)
+//                .extract()
+//                .jsonPath().getInt("find { it.name=='Account 1' }.id");
+//        get("/api/accounts/" + id).then()
+//                .assertThat()
+//                .statusCode(200)
+//                .body("id", equalTo(id))
+//                .body("name", equalTo("Account 1"))
+//                .body("balance", equalTo(2345))
+//                .body("currency", equalTo("EUR"));
+//    }
+
+    //@Test
+    //public void testAddAccount()
 
 //    @Test
 //    public void testAddAndDeleteAccount() {

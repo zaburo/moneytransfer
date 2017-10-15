@@ -1,8 +1,7 @@
-package com.francoismoureau.moneytransfer;
+package com.francoismoureau.moneytransfer.model;
 
 import java.math.BigDecimal;
 import java.util.Currency;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Transfer {
@@ -19,8 +18,6 @@ public class Transfer {
 
     private Currency currency;
 
-    private Date date;
-
     private String comment;
 
     private TransferStatus status;
@@ -31,14 +28,12 @@ public class Transfer {
         this.destinationAccountId = destinationAccountId;
         this.amount = amount;
         this.currency = currency;
-        this.date = new Date();
         this.comment = comment;
         this.status = TransferStatus.CREATED;
     }
 
     public Transfer() {
         this.id = COUNTER.getAndIncrement();
-        this.date = new Date();
         this.status = TransferStatus.CREATED;
     }
 
@@ -76,14 +71,6 @@ public class Transfer {
 
     public void setCurrency(Currency currency) {
         this.currency = currency;
-    }
-
-    public Date getDate() {
-        return date;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
     }
 
     public String getComment() {
@@ -125,7 +112,6 @@ public class Transfer {
                 ", destinationAccountId=" + destinationAccountId +
                 ", amount=" + amount +
                 ", currency=" + currency +
-                ", date=" + date +
                 ", comment='" + comment + '\'' +
                 ", status=" + status +
                 '}';

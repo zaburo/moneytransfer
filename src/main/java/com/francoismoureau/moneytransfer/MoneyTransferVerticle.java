@@ -1,5 +1,7 @@
 package com.francoismoureau.moneytransfer;
 
+import com.francoismoureau.moneytransfer.model.Account;
+import com.francoismoureau.moneytransfer.model.Transfer;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Launcher;
@@ -58,9 +60,7 @@ public class MoneyTransferVerticle extends AbstractVerticle {
                 .createHttpServer()
                 .requestHandler(router::accept)
                 .listen(
-                        // Retrieve the port from the configuration,
-                        // default to 8080.
-                        config().getInteger("http.port", 8080),
+                        8080,
                         result -> {
                             if (result.succeeded()) {
                                 fut.complete();
@@ -95,13 +95,17 @@ public class MoneyTransferVerticle extends AbstractVerticle {
     }
 
     private void addAccount(RoutingContext routingContext) {
-        final Account account = Json.decodeValue(routingContext.getBodyAsString(),
-                Account.class);
-        accounts.put(account.getId(), account);
-        routingContext.response()
-                .setStatusCode(201)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(account));
+        try {
+            final Account account = Json.decodeValue(routingContext.getBodyAsString(),
+                    Account.class);
+            accounts.put(account.getId(), account);
+            routingContext.response()
+                    .setStatusCode(201)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encodePrettily(account));
+        } catch (Exception e) {
+            routingContext.response().setStatusCode(400).end();
+        }
     }
 
     private void updateAccount(RoutingContext routingContext) {
@@ -115,9 +119,26 @@ public class MoneyTransferVerticle extends AbstractVerticle {
             if (account == null) {
                 routingContext.response().setStatusCode(404).end();
             } else {
-                account.setName(json.getString("name"));
-                account.setBalance(new BigDecimal(json.getString("balance")));
-                account.setCurrency(Currency.getInstance(json.getString("currency")));
+                boolean updated = false;
+                if (json.getString("name") != null && !json.getString("name").isEmpty()) {
+                    account.setName(json.getString("name"));
+                    updated = true;
+                }
+                if (json.getString("balance") != null && !json.getString("balance").isEmpty() && (new BigDecimal(json.getString("balance"))).compareTo(BigDecimal.ZERO) >= 0) {
+                    account.setBalance(new BigDecimal(json.getString("balance")));
+                    updated = true;
+                }
+                if (json.getString("currency") != null && !json.getString("currency").isEmpty()) {
+                    try {
+                        account.setCurrency(Currency.getInstance(json.getString("currency")));
+                        updated = true;
+                    } catch (Exception e) {
+                        updated = false;
+                    }
+                }
+                if (!updated) {
+                    routingContext.response().setStatusCode(400).end();
+                }
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end(Json.encodePrettily(account));
@@ -160,13 +181,17 @@ public class MoneyTransferVerticle extends AbstractVerticle {
     }
 
     private void addTransfer(RoutingContext routingContext) {
-        final Transfer transfer = Json.decodeValue(routingContext.getBodyAsString(),
-                Transfer.class);
-        transfers.put(transfer.getId(), transfer);
-        routingContext.response()
-                .setStatusCode(201)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(transfer));
+        try {
+            final Transfer transfer = Json.decodeValue(routingContext.getBodyAsString(),
+                    Transfer.class);
+            transfers.put(transfer.getId(), transfer);
+            routingContext.response()
+                    .setStatusCode(201)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encodePrettily(transfer));
+        } catch (Exception e) {
+            routingContext.response().setStatusCode(400).end();
+        }
     }
 
     private void updateTransfer(RoutingContext routingContext) {
@@ -179,7 +204,7 @@ public class MoneyTransferVerticle extends AbstractVerticle {
             if (transfer == null) {
                 routingContext.response().setStatusCode(404).end();
             } else {
-                if (transfer.getStatus() != Transfer.TransferStatus.EXECUTED && transfer.getAmount().compareTo(BigDecimal.ZERO) > 0 && accounts.get(transfer.getSourceAccountId()).getBalance().compareTo(transfer.getAmount()) > 0 && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(accounts.get(transfer.getDestinationAccountId()).getCurrency()) && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(transfer.getCurrency()) && accounts.get(transfer.getDestinationAccountId()).getCurrency().equals(transfer.getCurrency())) {
+                if (transfer.getStatus() != Transfer.TransferStatus.EXECUTED && transfer.getStatus() != Transfer.TransferStatus.FAILED && transfer.getAmount().compareTo(BigDecimal.ZERO) > 0 && accounts.get(transfer.getSourceAccountId()).getBalance().compareTo(transfer.getAmount()) > 0 && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(accounts.get(transfer.getDestinationAccountId()).getCurrency()) && accounts.get(transfer.getSourceAccountId()).getCurrency().equals(transfer.getCurrency()) && accounts.get(transfer.getDestinationAccountId()).getCurrency().equals(transfer.getCurrency())) {
                     accounts.get(transfer.getSourceAccountId()).withdraw(transfer.getAmount());
                     accounts.get(transfer.getDestinationAccountId()).deposit(transfer.getAmount());
                     transfer.setStatus(Transfer.TransferStatus.EXECUTED);
